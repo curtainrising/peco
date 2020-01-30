@@ -1,0 +1,58 @@
+/* Add a black background color to the top navigation */
+.topnav {
+  background-color: #333;
+  overflow: hidden;
+}
+
+/* Style the links inside the navigation bar */
+.topnav a {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+.topnav a.pull-right {
+  float: right;
+}
+
+/* Change the color of links on hover */
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+/* Add a color to the active/current link */
+.topnav a.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+
+.Dropzone {
+  height: 200px;
+  width: 200px;
+  background-color: #fff;
+  border: 2px dashed rgb(187, 186, 186);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 16px;
+}
+
+.Highlight {
+  background-color: rgb(188, 185, 236);
+}
+
+.Icon {
+  opacity: 0.3;
+  height: 64px;
+  width: 64px;
+}
+
+.FileInput {
+  display: none;
+}
