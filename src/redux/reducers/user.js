@@ -1,20 +1,22 @@
-import { USER_ACTIONS as actions } from '../../common/constants';
+import { USER_ACTIONS, SCHOOL_ACTIONS } from '../../helpers/constants';
+import history from '../../helpers/history';
 
 const user = JSON.parse(localStorage.getItem('user')) || {};
+console.log('user', user);
 const profileReducerDefaultState = user;
 
 export default (state = profileReducerDefaultState, action) => {
+  const { type, payload } = action;
   switch (action.type) {
-    case actions.LOGIN:
-      console.log('authenticated');
-      return {isAtuhenticated: true};
-    case actions.LOGIN_ERROR:
-      return {error: 'there was an error'};
-    case actions.LOG_OUT:
+    case USER_ACTIONS.REGISTER_SUCCESS:
+    case USER_ACTIONS.LOGIN_SUCCESS:
+    case SCHOOL_ACTIONS.JOIN_SCHOOL_SUCCESS:
+      localStorage.setItem('user', JSON.stringify(payload.user));
+      return payload.user;
+    case USER_ACTIONS.LOG_OUT:
       localStorage.removeItem('user');
-      return {};
-    case actions.SIGN_UP:
-      return {isAtuhenticated: true}
+      history.push('/')
+      return {}
     default:
       return state;
   }

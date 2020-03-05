@@ -5,8 +5,6 @@ import AppRouter from './routers/AppRouter';
 import store from './redux/store';
 import 'normalize.css/normalize.css';
 import './styles/styles.scss';
-// import config from 'config';
-// console.log(config);
 
 const jsx = (
   <Provider store={store}>

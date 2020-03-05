@@ -1,4 +1,4 @@
-FROM node:8.9
+FROM node:8.10
 ADD . /app
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH

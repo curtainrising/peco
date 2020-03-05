@@ -1,16 +1,22 @@
 import 'babel-polyfill';
 import { takeEvery, call, put } from 'redux-saga/effects'
+import { USER_ACTIONS } from '../../helpers/constants';
+import { formToPayload } from '../../helpers/utils';
 import { loadAll } from '../../api';
-import { loginSchool } from '../../redux/actionCreators';
+import { loginSuccess } from '../../redux/actionCreators';
+import { login } from '../../graphql/getSchool';
+import history from '../../helpers/history';
 
-function* loginRequest(payload) {
-  // let response = yield loadAll();
-  // console.log('response',response);
-  // yield put(loginSchool(response.data.school));
-  localStorage.setItem('user', JSON.stringify({isAtuhenticated: true}))
-  yield put({type: 'LOGIN', payload});
+function* loginRequest({payload}) {
+  console.log('payload', payload);
+  let loginData = formToPayload(payload);
+  console.log('loginData', loginData)
+  const loginResult = yield call(login, loginData);
+  console.log('loginResult', loginResult);
+  history.push('/');
+  yield put(loginSuccess(loginResult.data.login))
 }
 
 export default function* watchLoginRequest() {
-  yield takeEvery('LOGIN_REQUEST', loginRequest)
+  yield takeEvery(USER_ACTIONS.LOGIN_REQUEST, loginRequest)
 }
