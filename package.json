@@ -31,7 +31,7 @@
     "config": "^3.0.1",
     "css-loader": "0.28.4",
     "ejs": "^2.6.1",
-    "express": "^4.16.4",
+    "express": "^4.17.3",
     "graphql": "^14.6.0",
     "history": "^4.10.1",
     "live-server": "^1.2.0",
