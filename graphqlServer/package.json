@@ -5,18 +5,27 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=dev-local node src/app.js"
+    "start-local": "NODE_ENV=dev-local nodemon -r dotenv/config src/app.js dotenv_config_path=./.env.local",
+    "start-dev": "NODE_ENV=dev nodemon -r dotenv/config src/app.js dotenv_config_path=./.env.development",
+    "start-prod": "NODE_ENV=production nodemon -r dotenv/config src/app.js dotenv_config_path=./.env.production",
+    "start": "node src/app.js"
   },
   "author": "",
+  "comments": {
+    "graphql": "^14.6.0",
+    "express-graphql": "^0.9.0"
+  },
   "license": "ISC",
   "dependencies": {
     "config": "^3.2.5",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.17.1",
-    "express-graphql": "^0.9.0",
-    "graphql": "^14.6.0",
+    "graphql": "^16.8.1",
+    "graphql-http": "^1.22.1",
+    "graphql-yoga": "^5.3.1",
     "jsonwebtoken": "^8.5.1",
-    "mongodb": "^3.5.2",
+    "mongodb": "^6.5.0",
     "mongoose": "^5.8.11",
     "nodemon": "^2.0.2",
     "uuid": "^7.0.2"

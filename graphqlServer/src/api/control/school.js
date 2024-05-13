@@ -1,11 +1,12 @@
 const uuid = require('uuid');
+const { GraphQLError } = require('graphql');
 const { find, add, remove, update } = require('../../helpers/mongoHelper');
 const teacherControl = require('./teachers');
 const classeControl = require('./classes');
 const studentControl = require('./students');
 const { getSchoolSchema } = require('../../helpers/schemas');
 const { filterData } = require('../../helpers/utils');
-const { COLLECTION: { SCHOOL }} = require('../../helpers/constants');
+const { COLLECTION: { SCHOOL }, ERRORS, APP_SECRET} = require('../../helpers/constants');
 const logger = require('../../helpers/logger').init('School Control');
 
 const findSchool = async (data) => {
@@ -58,10 +59,25 @@ const getSchoolData = async (schoolData) => {
 
 exports.joinSchool = async (schoolData) => {
   try {
-    console.log('schoolData',schoolData);
-    const schoolRes = await findSchool(schoolData);
+    const schoolRes = await findSchool({schoolName: schoolData.schoolName});
     if (schoolRes.length !== 1) {
-      throw new Error('School does not exist');
+      throw new GraphQLError(
+        ERRORS.NO_SCHOOL,
+        {
+          extensions: {
+            code: ERRORS.NO_SCHOOL,
+          }
+        }
+      );
+    } else if (schoolRes[0].password !== schoolData.password) {
+      throw new GraphQLError(
+        ERRORS.BAD_PASSWORD,
+        {
+          extensions: {
+            code: ERRORS.BAD_PASSWORD,
+          }
+        }
+      );
     }
     return getSchoolData(schoolRes[0])
   } catch (e) {
@@ -72,7 +88,6 @@ exports.joinSchool = async (schoolData) => {
 
 exports.getSchool = async (schoolData) => {
   try {
-    console.log('schoolData',schoolData);
     const schoolRes = await findSchool(schoolData);
     if (schoolRes.length !== 1) {
       throw new Error('School does not exist');
@@ -89,7 +104,6 @@ exports.getSchools = async () => {
 }
 
 const getSingleSchoolSchema = ({schoolName, schoolId}) => {
-  console.log('schoolName', schoolName, 'schoolId', schoolId);
   return {schoolName, schoolId};
 }
 exports.getGraphqlSchema = ({school, classes, teachers, students}) => {

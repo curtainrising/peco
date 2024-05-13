@@ -1,17 +1,9 @@
 version: '2'
 services:
-  mongo:
-    image: mongo
-    ports:
-    - "8082:8082"
-    - "8083:8083"
-    - "8080:8080"
-    - "27017:27017"
   web:
     image: curtainrising/peco
-    network_mode: service:mongo
-    command: bash -c "sleep 10; npm run dev-server"
-  server:
-    image: curtainrising/pecographql
-    network_mode: service:mongo
-    command: bash -c "sleep 10; npm run start"
+    ports:
+      - 3000:3000
+    environment:
+      TEST: test
+

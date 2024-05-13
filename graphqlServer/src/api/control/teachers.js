@@ -1,8 +1,9 @@
 const uuid = require('uuid');
-const { find, add, remove, update, addMany } = require('../../helpers/mongoHelper');
+const { GraphQLError } = require('graphql');
+const { find, add, remove, update, updateAndReturn, addMany, getObjectId } = require('../../helpers/mongoHelper');
 const { getTeacherSchema } = require('../../helpers/schemas');
-const { filterData } = require('../../helpers/utils');
-const { COLLECTION: { TEACHERS }} = require('../../helpers/constants');
+const { filterData, createRegexQuery } = require('../../helpers/utils');
+const { COLLECTION: { TEACHERS }, ERRORS} = require('../../helpers/constants');
 const logger = require('../../helpers/logger').init('Teacher Control');
 
 const findTeacher = async (data) => {
@@ -17,13 +18,30 @@ exports.createTeacher = async (teacher) => {
   try {
     const teacherRes = findTeacher({teacherId: teacher.teacherId});
     if (teacherRes.length >= 1) {
-      throw new Error('Teacher already exists');
+      throw new GraphQLError(
+        ERRORS.TEACHER_EXISTS,
+        {
+          extensions: {
+            code: ERRORS.TEACHER_EXISTS,
+          }
+        }
+      );
     }
-    teacher['teacherId'] = uuid();
-    teacher['_id'] = teacher['teacherId'];
-    console.log('teacher', teacher);
+    teacher['_id'] = getObjectId();
+    teacher['teacherId'] = teacher['_id'].toString();
     let addTeacherRes = await add(TEACHERS, {...getTeacherSchema(), ...teacher});
-    return addTeacherRes;
+    if (!addTeacherRes || !addTeacherRes.acknowledged) {
+      throw new GraphQLError(
+        ERRORS.UNKOWN_ERROR,
+        {
+          extensions: {
+            code: ERRORS.UNKOWN_ERROR,
+          }
+        }
+      );
+    }
+    let addedTeacher = await findTeacher({_id: teacher['_id']});
+    return addedTeacher[0];
   } catch (e) {
     logger.logError(e.message);
     throw e;
@@ -32,12 +50,8 @@ exports.createTeacher = async (teacher) => {
 
 exports.updateTeacher = async (teacher) => {
   try {
-    let res = await update(TEACHERS, {teacherId: teacher.teacherId}, {"$set": teacher})
-    if (res.result.ok >= 1) {
-      return teacher;
-    } else {
-      throw new Error('Teacher was not updated');
-    }
+    let res = await updateAndReturn(TEACHERS, {teacherId: teacher.teacherId}, {"$set": teacher})
+    return res;
   } catch (e) {
     logger.logError(e.message);
     throw e;
@@ -68,16 +82,22 @@ exports.uploadTeachers = async (teachers) => {
     const teacherMap = {};
     for (let i = 0; i < teachers.length; i++) {
       let teacherIndex = teachers[i].teacherId;
-      teachers[i].teacherId = uuid();
+      teachers[i]['_id'] = getObjectId();
+      teachers[i].teacherId = teachers[i]['_id'].toString();
       teacherMap[teacherIndex] = teachers[i].teacherId;
     }
     let teachersRes = [];
     if (teachers.length) {
-      teacherRes = await addMany(TEACHERS, teachers);
+      teachersRes = await addMany(TEACHERS, teachers);
     }
 
-    console.log('teachersRes', teachersRes);
-    return {teachersRes, teacherMap};
+    let teacherData = [];
+    if (teachersRes && teachersRes.acknowledged) {
+      let teacherIdRegex = createRegexQuery(teachers, 'teacherId');
+      teacherData = await findTeacher({teacherId: new RegExp(teacherIdRegex)});
+    }
+    
+    return {teachersRes: teacherData, teacherMap};
   } catch (e) {
     logger.logError(e.message);
     throw e;

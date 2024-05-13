@@ -8,6 +8,17 @@ const getUserSchema = () => ({
   schoolId: '',
 })
 
+const getOwnUserSchema = () => ({
+  userName: '',
+  firstName: '',
+  lastName: '',
+  password: '',
+  userType: '',
+  userId: '',
+  schoolId: '',
+  authToken: '',
+})
+
 const getStudentSchema = () => ({
   firstName: '',
   lastName: '',
@@ -39,6 +50,7 @@ const getSchoolSchema = () => ({
 
 module.exports = {
   getUserSchema,
+  getOwnUserSchema,
   getStudentSchema,
   getTeacherSchema,
   getClassSchema,

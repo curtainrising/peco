@@ -10,8 +10,8 @@ module.exports = {
       schoolId: 'abcdefghij'
     },
     {
-      firstName: 'frances',
-      lastName: 'medalen',
+      firstName: 'frank',
+      lastName: 'magellen',
       parentEmail: "paret@email.com",
       studentId: '2222222222',
       teacherId: '1234567890',
@@ -29,7 +29,7 @@ module.exports = {
     },
     {
       firstName: 'dude',
-      lastName: 'farts',
+      lastName: 'tester',
       parentEmail: "rid@mire.com",
       studentId: '4444444444',
       teacherId: '',
@@ -38,7 +38,7 @@ module.exports = {
     },
     {
       firstName: 'dudes',
-      lastName: 'fartss',
+      lastName: 'testers',
       parentEmail: "rid@mire.com",
       studentId: '5555555555',
       teacherId: '',
@@ -46,8 +46,8 @@ module.exports = {
       schoolId: 'abcdefghij'
     },
     {
-      firstName: 'stupid',
-      lastName: 'fartss',
+      firstName: 'normal',
+      lastName: 'name',
       parentEmail: "rid@mire.com",
       studentId: '6666666666',
       teacherId: '',
@@ -55,8 +55,8 @@ module.exports = {
       schoolId: 'abcdefghij'
     },
     {
-      firstName: 'donot',
-      lastName: 'fartss',
+      firstName: 'name',
+      lastName: 'normal',
       parentEmail: "rid@mire.com",
       studentId: '7777777777',
       teacherId: '',

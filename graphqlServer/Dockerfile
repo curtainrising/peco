@@ -1,4 +1,4 @@
-FROM node:8.10
+FROM node:18.16.0
 ADD . /app
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH

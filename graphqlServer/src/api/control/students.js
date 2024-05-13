@@ -1,8 +1,9 @@
 const uuid = require('uuid');
-const { find, add, remove, update, updateAndReturn, addMany } = require('../../helpers/mongoHelper');
+const { GraphQLError } = require('graphql');
+const { find, add, remove, update, updateAndReturn, addMany, getObjectId } = require('../../helpers/mongoHelper');
 const { getStudentSchema } = require('../../helpers/schemas');
 const { filterData, createRegexQuery } = require('../../helpers/utils');
-const { COLLECTION: { STUDENTS }} = require('../../helpers/constants');
+const { COLLECTION: { STUDENTS }, ERRORS} = require('../../helpers/constants');
 const logger = require('../../helpers/logger').init('Student Control');
 
 const findStudent = async (data) => {
@@ -15,11 +16,33 @@ const findStudent = async (data) => {
 
 exports.createStudent = async (student, schoolId) => {
   try {
-    student['studentId'] = uuid();
-    student['_id'] = student['studentId'];
+    const teacherRes = findStudent({studentId: student.studentId});
+    if (teacherRes.length >= 1) {
+      throw new GraphQLError(
+        ERRORS.STUDENT_EXISTS,
+        {
+          extensions: {
+            code: ERRORS.STUDENT_EXISTS,
+          }
+        }
+      );
+    }
+    student['_id'] = getObjectId();
+    student['studentId'] = student['_id'].toString();
     student['schoolId'] = schoolId;
     let addStudentRes = await add(STUDENTS, {...getStudentSchema(), ...student});
-    return addStudentRes;
+    if (!addStudentRes || !addStudentRes.acknowledged) {
+      throw new GraphQLError(
+        ERRORS.UNKOWN_ERROR,
+        {
+          extensions: {
+            code: ERRORS.UNKOWN_ERROR,
+          }
+        }
+      );
+    }
+    let addedStudent = await findStudent({_id: student['_id']});
+    return addedStudent[0];
   } catch (e) {
     logger.logError(e.message);
     throw e;
@@ -37,13 +60,13 @@ exports.uploadStudents = async (students, schoolId, classId, teacherMap) => {
       if (students[i].studentId) {
         updatedStudents.push(students[i])
       } else {
-        students[i].studentId = uuid();
+        students[i]['_id']  = getObjectId();
+        students[i].studentId = students[i]['_id'].toString();
         addStudents.push(students[i]);
       }
     }
     if (addStudents.length) {
       let addStudentRes = await addMany(STUDENTS, addStudents);
-      console.log('addStudentRes', addStudentRes);
     }
     if (updatedStudents.length) {
       let promises = [];
@@ -51,7 +74,6 @@ exports.uploadStudents = async (students, schoolId, classId, teacherMap) => {
         promises.push(update(STUDENTS, {studentId: updatedStudents[i].studentId}, {"$set": updatedStudents[i]}));
       }
       let updatedStudentRes = await Promise.all(promises);
-      console.log('updatedStudentRes', updatedStudentRes);
     }
     return students;
   } catch (e) {
@@ -70,32 +92,25 @@ exports.updateStudent = async (student) => {
 }
 
 exports.updateStudents = async (students, changeData) => {
-  console.log('students', students)
   try {
     let studentResults = [];
     if (students.addStudents && students.addStudents.length) {
       let addStudentIds = createRegexQuery(students.addStudents, 'studentId');
-      console.log('addStudentIds',addStudentIds);
       let res = await update(STUDENTS, {studentId: new RegExp(addStudentIds)}, {"$set": changeData}, {multi: true});
       let res2 = await findStudent({"studentId": new RegExp(addStudentIds)});
-      console.log('addStudents - res',res2);
       studentResults = [
         ...res2
       ]
     }
     if (students.removeStudents && students.removeStudents.length) {
       let removeStudenIds = createRegexQuery(students.removeStudents, 'studentId');
-      console.log('removeStudenIds',removeStudenIds);
       let res = await update(STUDENTS, {studentId: new RegExp(removeStudenIds)}, {"$set": {[Object.keys(changeData)[0]]: ""}}, {multi: true});
-      console.log('res', res);
       let res2 = await findStudent({studentId: new RegExp(removeStudenIds)});
-      console.log('removeStudents - res',res2);
       studentResults = [
         ...studentResults,
         ...res2
       ]
     }
-    console.log('studentResults', studentResults);
     return studentResults;
   } catch (e) {
     logger.logError(e.message);

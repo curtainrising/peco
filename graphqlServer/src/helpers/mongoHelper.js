@@ -1,85 +1,60 @@
-const MongoClient = require('mongodb').MongoClient;
-const ObjectID = require('mongodb').ObjectID;
+const { MongoClient, ObjectId } = require('mongodb')
+const { GraphQLError } = require('graphql');
 const config = require('config');
+const jwt = require('jsonwebtoken')
 const testData = require('./testData');
-const { COLLECTION: { USERS, SCHOOL, CLASSES, STUDENTS, TEACHERS }} = require('./constants');
+const { COLLECTION: { USERS, SCHOOL, CLASSES, STUDENTS, TEACHERS }, DBNAME, ERRORS, APP_SECRET} = require('./constants');
 let db;
-
-const find = (collection, options = {}) => {
-  return new Promise((resolve,reject) => {
-    db.collection(collection).find(options).toArray((err, results) => {
-      // console.log('results', results)
-      if (err) return reject(err);
-
-      resolve(results);
-    })
-  });
+const mongoUrl = process.env.MONGO_URL;
+exports.getObjectId = () => {
+  return new ObjectId();
+}
+const find = async (collection, options = {}) => {
+  const res = await db.collection(collection).find(options).toArray();
+  return res;
 }
 exports.find = find;
 
-const add = (collection, saveData = {}, options = {}) => {
-  if (options._id) {
-    saveData._id = new ObjectID(options._id);
-  }
-  return new Promise((resolve,reject) => {
-    db.collection(collection).insertOne(saveData, (err, results) => {
-      // console.log('results',results.ops[0])
-      if (err) return reject(err);
-
-      resolve(results.ops[0]);
-    })
-  });
+const add = async (collection, saveData = {}, options = {}) => {
+  const res = await db.collection(collection).insertOne(saveData);
+  return res;
 }
 exports.add = add;
 
-const addMany = (collection, saveDataArr = [], options = {}) => {
-  return new Promise((resolve,reject) => {
-    db.collection(collection).insertMany(saveDataArr, (err, results) => {
-      // console.log('results',results.ops[0])
-      if (err) return reject(err);
-
-      resolve(results.ops);
-    })
-  });
+const addMany = async (collection, saveDataArr = [], options = {}) => {
+  const res = db.collection(collection).insertMany(saveDataArr);
+  return res
 }
 exports.addMany = addMany;
 
 exports.remove = (collection, query = {}) => {
-  return new Promise((resolve,reject) => {
-    if (!query) {
-      reject('No query');
-    }
-    db.collection(collection).remove(query, (err, results) => {
-      if (err) return reject(err);
-      // console.log(results.result.n + " document(s) deleted");
-
-      resolve();
-    })
-  });
+  if (!query) {
+    console.log('mongodb-remove: No query');
+    throw new GraphQLError(
+      ERRORS.UNKOWN_ERROR,
+      {
+        extensions: {
+          code: ERRORS.UNKOWN_ERROR,
+        }
+      }
+    );
+  }
+  db.collection(collection).deleteOne(query);
 }
-exports.update = (collection, queryData, saveData, options = {}) => {
-  return new Promise((resolve,reject) => {
-    db.collection(collection).update(queryData, saveData, options, (err, results) => {
-      if (err) return reject(err);
-
-      resolve(results);
-    })
-  });
+exports.update = async (collection, queryData, saveData, options = {}) => {
+  const res = await db.collection(collection).updateMany(queryData, saveData, options);
+  return res;
 }
 
-exports.updateAndReturn = (collection, queryData, saveData, options = {}) => {
-  return new Promise((resolve,reject) => {
-    db.collection(collection).update(queryData, saveData, {returnNewDocument: true, ...options}, (err, results) => {
-      if (err) return reject(err);
-
-      resolve(results);
-    })
-  });
+exports.updateAndReturn = async (collection, queryData, saveData, options = {}) => {
+  const res = await db.collection(collection).findOneAndUpdate(queryData, saveData, {upsert: true, returnDocument: 'after', ...options});
+  return res;
 }
 
 const insertTestData = async () => {
   try {
-    let userRes = await find(USERS, testData.getUsers()[0].userId)
+    let userRes = await find(USERS, {userId: testData.getUsers()[0].userId})
+    console.log('userRes', userRes);
     if (userRes.length < 1) {
       let userTestData = testData.getUsers();
       let schoolTestData = testData.getSchools();
@@ -89,7 +64,10 @@ const insertTestData = async () => {
 
         console.log('inserting test data');
         let promises = [];
-        userTestData.forEach(item => promises.push(add(USERS, item)));
+        userTestData.forEach(item => {
+          item.authToken = jwt.sign({ userId: item.userId }, APP_SECRET);
+          promises.push(add(USERS, item))
+        });
         schoolTestData.forEach(item => promises.push(add(SCHOOL, item)));
         studentTestData.forEach(item => promises.push(add(STUDENTS, item)));
         teacherTestData.forEach(item => promises.push(add(TEACHERS, item)));
@@ -108,15 +86,15 @@ const insertTestData = async () => {
       console.log('e',e);
     }
 }
-exports.init = (app) => {
-  return new Promise((resolve,reject) => {
-    MongoClient.connect(config.mongoUrl, (err, client) => {
-      if (err) return console.log('err', err)
-      // console.log('here');
-      db = client.db('peco')
-      insertTestData()
-      resolve();
-    });
-  })
 
+exports.init = async (app) => {
+  console.log('config', config);
+  console.log('process.env', process.env);
+  const url = mongoUrl || "mongodb://root:example@localhost:27017";
+  console.log('mongoUrl', url);
+  client = new MongoClient(url)
+  await client.connect()
+  console.log('Connected successfully to server')
+  db = client.db(DBNAME)
+  insertTestData()
 }

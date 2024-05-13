@@ -1,8 +1,9 @@
 const uuid = require('uuid');
-const { find, add, remove, update } = require('../../helpers/mongoHelper');
+const { GraphQLError } = require('graphql');
+const { find, add, remove, update, updateAndReturn, getObjectId } = require('../../helpers/mongoHelper');
 const { getClassSchema } = require('../../helpers/schemas');
 const { filterData } = require('../../helpers/utils');
-const { COLLECTION: { CLASSES }} = require('../../helpers/constants');
+const { COLLECTION: { CLASSES }, ERRORS} = require('../../helpers/constants');
 const logger = require('../../helpers/logger').init('Class Control');
 
 const findClass = async (data) => {
@@ -14,17 +15,33 @@ const findClass = async (data) => {
 }
 
 exports.createClass = async (classData) => {
-  console.log('classData', classData);
   try {
     const classRes = findClass({classId: classData.classId});
     if (classRes.length >= 1) {
-      throw new Error('Class already exists');
+      throw new GraphQLError(
+        ERRORS.CLASS_EXISTS,
+        {
+          extensions: {
+            code: ERRORS.CLASS_EXISTS,
+          }
+        }
+      );
     }
-    classData['classId'] = uuid();
-    classData['_id'] = classData['classId'];
-    let addClassData = await add(CLASSES, {...getClassSchema(), ...classData});
-    console.log('addClassData', addClassData);
-    return addClassData;
+    classData['_id'] = getObjectId();
+    classData['classId'] = classData['_id'].toString();
+    let addClassRes = await add(CLASSES, {...getClassSchema(), ...classData});
+    if (!addClassRes || !addClassRes.acknowledged) {
+      throw new GraphQLError(
+        ERRORS.UNKOWN_ERROR,
+        {
+          extensions: {
+            code: ERRORS.UNKOWN_ERROR,
+          }
+        }
+      );
+    }
+    let addedClassData = await findClass({_id: classData['_id']});
+    return addedClassData[0];
   } catch (e) {
     logger.logError(e.message);
     throw e;
@@ -33,12 +50,8 @@ exports.createClass = async (classData) => {
 
 exports.updateClass = async (classData) => {
   try {
-    let res = await update(CLASSES, {classId: classData.classId}, {"$set": classData})
-    if (res.result.ok >= 1) {
-      return classData;
-    } else {
-      throw new Error('Class was not updated');
-    }
+    let res = await updateAndReturn(CLASSES, {classId: classData.classId}, {"$set": classData})
+    return res;
   } catch (e) {
     logger.logError(e.message);
     throw e;

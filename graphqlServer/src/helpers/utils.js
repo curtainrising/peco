@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const { GraphQLError } = require( 'graphql');
 const userControl = require('../api/control/user');
 const constants = require('./constants');
 
@@ -13,13 +14,30 @@ const filterData = (data, schema) => {
 const authenticate = async ({userId, authToken}) => {
   let user;
   try {
-    user = await userControl.getUser(userId);
     let authData = jwt.verify(authToken, constants.APP_SECRET);
+    user = await userControl.getOwnUser(authData.userId);
     if (user.userId !== userId) {
-      throw new Error('not correct user');
+      throw new GraphQLError(
+        constants.ERRORS.UNAUHORIZED,
+        {
+          extensions: {
+            code: constants.ERRORS.UNAUHORIZED,
+          }
+        }
+      );
     }
   } catch (e) {
-    throw e;
+    if (e && e.extensions) throw e;
+    else {
+      throw new GraphQLError(
+        e.message,
+        {
+          extensions: {
+            code: constants.ERRORS.UNAUHORIZED,
+          }
+        }
+      );
+    }
   }
   return user;
 }
